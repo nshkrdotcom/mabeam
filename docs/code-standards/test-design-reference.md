@@ -2,15 +2,15 @@
 
 ## Overview
 
-This document serves as the master reference for designing and building robust, maintainable tests in the OTP Supervisor Educational Tool project. It synthesizes lessons learned from extensive test refactoring, compliance audits, and architectural improvements to provide comprehensive guidance for test development.
+This document serves as the master reference for designing and building robust, maintainable tests in the OTP Supervisor project. It synthesizes lessons learned from extensive test refactoring, compliance audits, and architectural improvements to provide comprehensive guidance for test development.
 
 ## Core Philosophy
 
 ### Test Independence Principle
 Every test must be **completely independent** and should not affect or be affected by other tests. This principle drives all architectural decisions and patterns in our test suite.
 
-### Educational Value Preservation
-Tests serve dual purposes: validation and education. All testing patterns must preserve and enhance the educational value of the codebase while ensuring robust test execution.
+### Documentation Value Preservation
+Tests serve dual purposes: validation and documentation. All testing patterns must preserve and enhance the documentation value of the codebase while ensuring robust test execution.
 
 ### OTP Compliance First
 All test patterns must align with OTP principles and leverage OTP guarantees rather than working around them.
@@ -312,7 +312,7 @@ end
 **Descriptive Test Names:**
 ```elixir
 test "supervisor restarts killed child with one_for_one strategy" do
-  # Clear intent and educational value
+  # Clear intent and documentation value
 end
 
 test "concurrent operations maintain process state integrity" do
@@ -396,7 +396,7 @@ end
 - Apply unique naming patterns
 - Implement proper synchronization
 - Add comprehensive cleanup
-- Include educational comments
+- Include explanatory comments
 
 ### 3. Validation Phase
 
@@ -406,7 +406,7 @@ end
 - [ ] No `Process.sleep/1` usage
 - [ ] No hardcoded global names
 - [ ] Helper functions used appropriately
-- [ ] Educational value preserved
+- [ ] Documentation value preserved
 
 ## Quality Assurance
 
@@ -433,7 +433,7 @@ done
 - [ ] Consistent pattern application
 - [ ] No global state dependencies
 - [ ] Proper cleanup implementation
-- [ ] Educational comments included
+- [ ] Explanatory comments included
 
 ## Performance Considerations
 
@@ -453,19 +453,19 @@ done
 - Minimal test data creation
 - Optimized synchronization patterns
 
-## Educational Integration
+## Documentation Integration
 
 ### 1. Tests as Documentation
 
 **Documentation Standards:**
 - Clear scenario descriptions
-- Educational comments explaining OTP concepts
+- Explanatory comments explaining OTP concepts
 - Graduated complexity progression
 - Real-world applicable examples
 
 ### 2. Learning Objectives
 
-**Educational Focus:**
+**Documentation Focus:**
 - Demonstrate proper OTP patterns
 - Show supervision strategies
 - Illustrate error handling
@@ -495,12 +495,12 @@ done
 
 ## Summary
 
-This reference provides comprehensive guidance for building robust, maintainable, and educational OTP tests. The key principles are:
+This reference provides comprehensive guidance for building robust, maintainable, and well-documented OTP tests. The key principles are:
 
 1. **Test Independence**: Every test must be completely independent
 2. **OTP Compliance**: Leverage OTP guarantees and patterns
-3. **Educational Value**: Preserve and enhance learning objectives
+3. **Documentation Value**: Preserve and enhance code documentation
 4. **Systematic Approach**: Apply patterns consistently across all test types
 5. **Continuous Improvement**: Learn from failures and refine patterns
 
-By following these patterns and principles, teams can build test suites that are reliable, maintainable, and serve as excellent educational resources for understanding OTP application development.
+By following these patterns and principles, teams can build test suites that are reliable, maintainable, and serve as excellent reference implementations for understanding OTP application development.

@@ -181,6 +181,91 @@ def create_agent_team(agent_configs) do
 end
 ```
 
+## Library Code Quality Improvements (SAFE REFACTORING)
+
+With Phase 1's critical dependencies resolved, these library improvements can be safely made alongside specialized helper development:
+
+### 1. Complex Function Refactoring (4 instances)
+**Problem:** Functions too long and complex, reducing maintainability
+**Files:** 
+- `lib/mabeam/telemetry.ex:57-101` - `handle_event/4` function (45 lines)
+- `lib/mabeam/foundation/agent/server.ex:130-220` - `handle_call/3` function (90 lines)
+- `lib/mabeam/foundation/agent/server.ex:259-285` - `handle_cast/2` function (26 lines)
+- `lib/mabeam/foundation/agent/lifecycle.ex:46-105` - `start_agent/2` function (59 lines)
+
+**Refactoring Strategy:**
+```elixir
+# Example: Break down handle_event/4 in telemetry.ex
+defp handle_agent_lifecycle_event(event_name, metadata) do
+  case event_name do
+    [:mabeam, :agent, :lifecycle, :started] ->
+      handle_agent_started(metadata)
+    [:mabeam, :agent, :lifecycle, :stopped] ->
+      handle_agent_stopped(metadata)
+    [:mabeam, :agent, :lifecycle, :error] ->
+      handle_agent_error(metadata)
+  end
+end
+
+defp handle_communication_event(event_name, metadata) do
+  case event_name do
+    [:mabeam, :communication, :event, :emitted] ->
+      handle_event_emitted(metadata)
+    [:mabeam, :communication, :subscription, :added] ->
+      handle_subscription_added(metadata)
+  end
+end
+```
+
+### 2. Commented Code Cleanup (4 instances)
+**Problem:** Incomplete service implementations in supervisor
+**File:** `lib/mabeam/foundation/supervisor.ex:127,130,150,153`
+
+**Resolution Strategy:**
+```elixir
+# Current commented code:
+# {Mabeam.Foundation.ResourceManager, []},
+# {Mabeam.Foundation.RateLimiter, []},
+
+# Option A: Implement basic versions
+{Mabeam.Foundation.ResourceManager, [mode: :basic]},
+
+# Option B: Remove with clear TODO
+# TODO: Add ResourceManager in Phase 3 for production deployment
+# {Mabeam.Foundation.ResourceManager, []},
+
+# Option C: Replace with placeholder that logs
+{Mabeam.Foundation.ServicePlaceholder, [service: :resource_manager]},
+```
+
+### 3. Enhanced Input Validation (2 instances)
+**Problem:** Missing parameter validation
+**Files:** `lib/mabeam/debug.ex:23`, `lib/mabeam/foundation/agent/lifecycle.ex:121`
+
+**Validation Additions:**
+```elixir
+# lib/mabeam/debug.ex
+def log(message, metadata \\ []) 
+    when is_binary(message) and is_list(metadata) do
+  if debug_enabled?() do
+    Logger.debug(message, metadata)
+  end
+end
+
+# lib/mabeam/foundation/agent/lifecycle.ex
+def start_agent(supervisor, opts) when is_pid(supervisor) and is_list(opts) do
+  agent_id = Keyword.get(opts, :agent_id)
+  
+  unless is_binary(agent_id) and String.length(agent_id) > 0 do
+    {:error, :invalid_agent_id}
+  else
+    do_start_agent(supervisor, opts)
+  end
+end
+```
+
+**IMPORTANT:** These refactoring changes maintain API compatibility while improving code quality and supporting the specialized test helpers being developed in parallel.
+
 ## Implementation Task
 
 Create three specialized helper modules building on the core `MabeamTestHelper`:
@@ -525,22 +610,28 @@ end
 
 ## Expected Deliverables
 
-1. **Three specialized helper modules**
+### Library Code Quality Improvements (PARALLEL WITH HELPERS)
+1. **Function refactoring** - Break down 4 complex functions into smaller, focused functions
+2. **Commented code resolution** - Remove or implement 4 commented service implementations
+3. **Input validation** - Add parameter validation to 2 critical functions
+
+### Specialized Test Helper Modules (PRIMARY FOCUS)
+4. **Three specialized helper modules**
    - `test/support/agent_test_helper.ex`
    - `test/support/system_test_helper.ex`
    - `test/support/event_test_helper.ex`
 
-2. **Comprehensive test coverage**
+5. **Comprehensive test coverage**
    - `test/support/agent_test_helper_test.exs`
    - `test/support/system_test_helper_test.exs`
    - `test/support/event_test_helper_test.exs`
 
-3. **Documentation and examples**
+6. **Documentation and examples**
    - Detailed function documentation
    - Usage examples for each helper
    - Integration patterns with core helper
 
-4. **OTP compliance**
+7. **OTP compliance**
    - Zero Process.sleep usage
    - Proper process monitoring
    - Comprehensive cleanup
@@ -548,6 +639,13 @@ end
 
 ## Success Criteria
 
+### Library Code Quality
+- Complex functions refactored into focused, maintainable components
+- Commented code either implemented or cleanly removed
+- Input validation added to critical functions
+- API compatibility maintained throughout refactoring
+
+### Test Helper Infrastructure
 - All specialized helpers implemented with proper OTP patterns
 - Comprehensive test coverage for each helper module
 - Integration with core MabeamTestHelper working correctly
@@ -556,14 +654,22 @@ end
 - Event system testing comprehensive and reliable
 - Zero flaky tests in helper implementations
 
-## Files to Create
+## Files to Create/Modify
 
-1. `test/support/agent_test_helper.ex` - Agent testing utilities
-2. `test/support/system_test_helper.ex` - System integration utilities  
-3. `test/support/event_test_helper.ex` - Event system utilities
-4. `test/support/agent_test_helper_test.exs` - Agent helper tests
-5. `test/support/system_test_helper_test.exs` - System helper tests
-6. `test/support/event_test_helper_test.exs` - Event helper tests
+### Library Code Changes
+1. `lib/mabeam/telemetry.ex` - Refactor handle_event/4 function
+2. `lib/mabeam/foundation/agent/server.ex` - Refactor handle_call/3 and handle_cast/2
+3. `lib/mabeam/foundation/agent/lifecycle.ex` - Refactor start_agent/2, add validation
+4. `lib/mabeam/foundation/supervisor.ex` - Resolve commented code
+5. `lib/mabeam/debug.ex` - Add input validation
+
+### Test Helper Infrastructure
+6. `test/support/agent_test_helper.ex` - Agent testing utilities
+7. `test/support/system_test_helper.ex` - System integration utilities  
+8. `test/support/event_test_helper.ex` - Event system utilities
+9. `test/support/agent_test_helper_test.exs` - Agent helper tests
+10. `test/support/system_test_helper_test.exs` - System helper tests
+11. `test/support/event_test_helper_test.exs` - Event helper tests
 
 ## Context Files for Reference
 

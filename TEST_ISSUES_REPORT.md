@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This report documents serious violations of OTP testing standards found in the test suite. The analysis reveals **critical anti-patterns** that make tests flaky, unreliable, and non-educational. Immediate action is required to bring the test suite into compliance with OTP best practices.
+This report documents serious violations of OTP testing standards found in the test suite. The analysis reveals **critical anti-patterns** that make tests flaky, unreliable, and poorly documented. Immediate action is required to bring the test suite into compliance with OTP best practices.
 
 **Overall Compliance Score: 4/10**
 
@@ -235,12 +235,12 @@ end
 
 ## Minor Issues (Low Priority)
 
-### 9. Missing Educational Comments
+### 9. Missing Explanatory Comments
 
 #### Issue: Tests Don't Explain OTP Concepts
-**Standard Violated:** Educational Value Preservation
+**Standard Violated:** Documentation Standards
 **Severity:** LOW
-**Impact:** Reduced learning value, unclear test intentions
+**Impact:** Reduced documentation value, unclear test intentions
 
 **Locations:**
 - All test files lack explanatory comments about OTP concepts
@@ -357,7 +357,7 @@ end
 ### test/mabeam/types/id_test.exs
 **Compliance Score: 8/10**
 **Issues Found: 2**
-- 1 missing educational comment
+- 1 missing explanatory comment
 - 1 test organization issue
 
 ### test/test_helper.exs
@@ -381,7 +381,7 @@ end
 
 ### Medium Priority (Plan for Next Sprint)
 1. **Add comprehensive error testing** - Test error recovery scenarios
-2. **Improve educational value** - Add comments explaining OTP concepts
+2. **Improve documentation value** - Add comments explaining OTP concepts
 3. **Standardize patterns** - Use consistent approaches across all tests
 
 ## Testing Helper Functions Needed
@@ -402,7 +402,7 @@ end
 
 ## Conclusion
 
-The test suite requires **immediate and comprehensive refactoring** to meet OTP testing standards. The current state violates fundamental OTP testing principles and creates unreliable, non-educational tests.
+The test suite requires **immediate and comprehensive refactoring** to meet OTP testing standards. The current state violates fundamental OTP testing principles and creates unreliable, poorly documented tests.
 
 **Priority Order:**
 1. **Fix Process.sleep violations** (blocking CI/CD reliability)
@@ -422,4 +422,4 @@ The test suite requires **immediate and comprehensive refactoring** to meet OTP 
 3. `test/mabeam_test.exs` (6 issues)
 4. `test/mabeam/foundation/communication/event_bus_test.exs` (5 issues)
 
-Without these fixes, the test suite will continue to be flaky, unreliable, and fail to demonstrate proper OTP practices to learners.
+Without these fixes, the test suite will continue to be flaky, unreliable, and fail to demonstrate proper OTP practices.

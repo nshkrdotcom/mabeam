@@ -177,9 +177,79 @@ defp wait_loop_pattern(condition_fn, timeout) do
 end
 ```
 
+## Critical Library Code Dependencies (MUST FIX FIRST)
+
+Before implementing test helpers, these critical library issues must be resolved to prevent runtime crashes and enable proper test infrastructure:
+
+### 1. UUID Dependency Fix (BLOCKING ISSUE)
+**Problem:** Runtime crashes when UUID functions are called
+**Files:** `lib/mabeam/types/id.ex:58,70,82`, `lib/mabeam/demo_agent.ex:108`
+
+**Required Fix:**
+```elixir
+# Add to mix.exs dependencies:
+defp deps do
+  [
+    {:uuid, "~> 1.1"},
+    # ... existing dependencies
+  ]
+end
+
+# OR replace with built-in alternatives in each file:
+defp generate_unique_id do
+  :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
+end
+```
+
+### 2. Error Handling Standardization (TEST HELPER DEPENDENCY)
+**Problem:** Inconsistent error patterns prevent test helpers from working reliably
+**Files:** `lib/mabeam/demo_agent.ex:179`, `lib/mabeam/foundation/agent/lifecycle.ex:98`, `lib/mabeam/foundation/registry.ex:145`
+
+**Required Standardization:**
+```elixir
+# Current inconsistent patterns:
+{:error, {:unknown_action, action}}
+{:error, {:registration_failed, reason}}
+{:error, :not_found}
+
+# Standardize to:
+{:error, :unknown_action}
+{:error, :registration_failed}  
+{:error, :not_found}
+```
+
+### 3. Core Type Specifications (SAFETY IMPROVEMENT)
+**Problem:** Missing @spec annotations reduce compile-time safety
+**Files:** Core API functions that test helpers will interact with
+
+**Required Additions:**
+```elixir
+# lib/mabeam.ex
+@spec start() :: {:ok, pid()} | {:error, term()}
+@spec list_agents() :: [Mabeam.Types.Agent.t()]
+@spec get_agent(binary()) :: {:ok, Mabeam.Types.Agent.t()} | {:error, :not_found}
+@spec stop_agent(binary()) :: :ok | {:error, term()}
+
+# lib/mabeam/demo_agent.ex  
+@spec start_link(keyword()) :: {:ok, Mabeam.Types.Agent.t(), pid()} | {:error, term()}
+@spec execute_action(pid(), atom(), map()) :: {:ok, term()} | {:error, term()}
+
+# lib/mabeam/foundation/registry.ex
+@spec start_link(keyword()) :: {:ok, pid()} | {:error, term()}
+@spec register_agent(Mabeam.Types.Agent.t()) :: :ok | {:error, term()}
+@spec get_agent(binary()) :: {:ok, Mabeam.Types.Agent.t()} | {:error, :not_found}
+
+# lib/mabeam/foundation/communication/event_bus.ex
+@spec start_link(keyword()) :: {:ok, pid()} | {:error, term()}
+@spec subscribe(pid(), [binary()]) :: :ok
+@spec emit(map()) :: :ok
+```
+
+**CRITICAL:** These library fixes must be completed BEFORE implementing test helpers, as the helpers depend on consistent error patterns and working UUID generation.
+
 ## Implementation Task
 
-Create the file `test/support/mabeam_test_helper.ex` with the following requirements:
+After completing the critical library fixes above, create the file `test/support/mabeam_test_helper.ex` with the following requirements:
 
 ### Module Structure
 ```elixir
@@ -298,14 +368,26 @@ Create a basic test file `test/support/mabeam_test_helper_test.exs` that:
 
 ## Expected Deliverables
 
-1. **Complete implementation** of `test/support/mabeam_test_helper.ex`
-2. **Basic test coverage** in `test/support/mabeam_test_helper_test.exs`
-3. **Documentation** with examples for each function
-4. **Zero Process.sleep usage** except for minimal synchronization delays
-5. **Comprehensive error handling** with proper timeouts
+### Library Code Fixes (FIRST)
+1. **UUID dependency resolution** - Add to mix.exs or implement alternatives
+2. **Error handling standardization** - Consistent error patterns across all modules
+3. **Core type specifications** - @spec annotations for all API functions test helpers will use
+
+### Test Helper Infrastructure (SECOND)
+4. **Complete implementation** of `test/support/mabeam_test_helper.ex`
+5. **Basic test coverage** in `test/support/mabeam_test_helper_test.exs`
+6. **Documentation** with examples for each function
+7. **Zero Process.sleep usage** except for minimal synchronization delays
+8. **Comprehensive error handling** with proper timeouts
 
 ## Success Criteria
 
+### Library Code Quality
+- UUID dependency resolved (no runtime crashes)
+- Error handling standardized (consistent patterns)
+- Core type specifications added (compile-time safety)
+
+### Test Helper Infrastructure
 - All functions implemented with proper OTP patterns
 - Comprehensive cleanup automation
 - Unique naming system prevents test conflicts
@@ -313,10 +395,21 @@ Create a basic test file `test/support/mabeam_test_helper_test.exs` that:
 - Proper timeout handling prevents hanging tests
 - Zero violations of OTP testing standards
 
-## Files to Create
+## Files to Create/Modify
 
-1. `test/support/mabeam_test_helper.ex` - Main implementation
-2. `test/support/mabeam_test_helper_test.exs` - Test coverage
+### Library Code Changes
+1. `mix.exs` - Add UUID dependency (or modify UUID usage in affected files)
+2. `lib/mabeam/types/id.ex` - Fix UUID calls
+3. `lib/mabeam/demo_agent.ex` - Fix UUID calls and standardize errors
+4. `lib/mabeam/foundation/agent/lifecycle.ex` - Standardize error patterns
+5. `lib/mabeam/foundation/registry.ex` - Standardize error patterns
+6. `lib/mabeam.ex` - Add @spec annotations
+7. `lib/mabeam/foundation/registry.ex` - Add @spec annotations
+8. `lib/mabeam/foundation/communication/event_bus.ex` - Add @spec annotations
+
+### Test Helper Infrastructure
+9. `test/support/mabeam_test_helper.ex` - Main implementation
+10. `test/support/mabeam_test_helper_test.exs` - Test coverage
 
 ## Context Files for Reference
 

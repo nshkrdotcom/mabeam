@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document establishes standards for writing OTP-compliant tests in the OTP Supervisor Educational Tool project. These standards ensure tests are reliable, maintainable, and follow OTP principles.
+This document establishes standards for writing OTP-compliant tests in the OTP Supervisor project. These standards ensure tests are reliable, maintainable, and follow OTP principles.
 
 ## Core Principles
 
@@ -366,7 +366,7 @@ end
 2. **Public API Only**: Test through the public interface
 3. **Proper Error Handling**: Test both success and failure cases
 4. **Resource Cleanup**: Always clean up processes
-5. **Educational Value**: Tests should demonstrate OTP concepts
+5. **Documentation Value**: Tests should demonstrate OTP concepts
 6. **Clear Assertions**: Make test intentions obvious
 
 ## Example: Complete OTP-Compliant Test
@@ -442,6 +442,6 @@ end
 3. **Monitor Everything**: Use proper process monitoring
 4. **Test Real Scenarios**: Test how the system actually behaves
 5. **Stay Deterministic**: Tests should never be flaky
-6. **Educational First**: Tests should teach OTP concepts
+6. **Documentation First**: Tests should demonstrate OTP concepts
 
-Following these standards ensures reliable, maintainable tests that demonstrate proper OTP patterns and serve as educational examples.
+Following these standards ensures reliable, maintainable tests that demonstrate proper OTP patterns and serve as reference examples.

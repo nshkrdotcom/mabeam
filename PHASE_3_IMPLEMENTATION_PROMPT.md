@@ -169,6 +169,110 @@ def stress_test_sandboxes(count, opts \\ []) do
 end
 ```
 
+## Library Code Performance Optimizations (PERFORMANCE-SUPPORTING)
+
+With core functionality stable from Phases 1-2, these optimizations can be implemented alongside performance testing to validate their impact:
+
+### 1. Magic Number Extraction (2 instances)
+**Problem:** Hard-coded values reduce maintainability and performance testing clarity
+**Files:** 
+- `lib/mabeam/foundation/communication/event_bus.ex:95` - `max_history: 1000`
+- `lib/mabeam/foundation/agent/lifecycle.ex:108` - Timeout values
+
+**Performance-Supporting Constants:**
+```elixir
+# lib/mabeam/foundation/communication/event_bus.ex
+@default_max_history 1000
+@default_cleanup_interval 5000
+@max_subscribers_per_pattern 100
+
+defp create_subscription_state(opts) do
+  %{
+    max_history: Keyword.get(opts, :max_history, @default_max_history),
+    cleanup_interval: @default_cleanup_interval,
+    max_subscribers: @max_subscribers_per_pattern
+  }
+end
+
+# lib/mabeam/foundation/agent/lifecycle.ex
+@default_start_timeout 5000
+@default_stop_timeout 3000
+@max_restart_attempts 3
+
+defp start_agent_with_timeout(supervisor, opts) do
+  timeout = Keyword.get(opts, :timeout, @default_start_timeout)
+  GenServer.call(supervisor, {:start_agent, opts}, timeout)
+end
+```
+
+### 2. Pattern Matching Optimization (1 instance)
+**Problem:** Complex pattern matching in event bus reduces performance
+**File:** `lib/mabeam/foundation/communication/event_bus.ex:275-305`
+
+**Performance Optimizations:**
+```elixir
+# Extract pattern matching logic for better performance
+defp match_event_pattern?(pattern, event_type) do
+  case pattern do
+    "*" -> true
+    "**" -> true
+    ^event_type -> true
+    _ -> match_wildcard_pattern(pattern, event_type)
+  end
+end
+
+defp match_wildcard_pattern(pattern, event_type) do
+  case String.split(pattern, "*", parts: 2) do
+    [prefix] -> 
+      String.starts_with?(event_type, prefix)
+    [prefix, suffix] -> 
+      String.starts_with?(event_type, prefix) and 
+      String.ends_with?(event_type, suffix)
+  end
+end
+
+# Add performance tracking
+defp track_pattern_matching_performance(pattern, event_type, start_time) do
+  duration = System.monotonic_time(:microsecond) - start_time
+  
+  if duration > @slow_pattern_threshold do
+    Logger.warning("Slow pattern matching", 
+      pattern: pattern, 
+      event_type: event_type, 
+      duration_microseconds: duration
+    )
+  end
+  
+  :telemetry.execute([:mabeam, :event_bus, :pattern_match], 
+    %{duration: duration}, 
+    %{pattern: pattern, event_type: event_type}
+  )
+end
+```
+
+### 3. Performance-Critical Type Specifications (5 instances)
+**Problem:** Missing @spec annotations on performance-critical functions
+**Files:** Performance-critical functions that need type specifications for optimization
+
+**Performance-Supporting Specs:**
+```elixir
+# lib/mabeam/foundation/communication/event_bus.ex
+@spec emit(map()) :: :ok
+@spec subscribe(pid(), [String.t()]) :: :ok
+@spec get_subscribers(String.t()) :: [pid()]
+@spec match_pattern(String.t(), String.t()) :: boolean()
+
+# lib/mabeam/foundation/agent/lifecycle.ex  
+@spec start_agent(pid(), keyword()) :: {:ok, pid()} | {:error, term()}
+@spec stop_agent(pid(), keyword()) :: :ok | {:error, term()}
+
+# lib/mabeam/foundation/registry.ex
+@spec lookup_agent(String.t()) :: {:ok, pid()} | {:error, :not_found}
+@spec register_agent(String.t(), pid()) :: :ok | {:error, term()}
+```
+
+**PERFORMANCE VALIDATION:** These optimizations will be validated by the performance testing infrastructure developed in parallel, ensuring measurable improvement.
+
 ## Implementation Task
 
 Create a comprehensive performance testing module building on existing helpers:
@@ -593,27 +697,39 @@ end
 
 ## Expected Deliverables
 
-1. **Performance test helper module**
+### Library Performance Optimizations (VALIDATED BY TESTS)
+1. **Constants extraction** - Replace 2 magic numbers with named constants
+2. **Pattern matching optimization** - Optimize event bus pattern matching performance
+3. **Performance-critical specs** - Add @spec annotations to 5 performance-critical functions
+
+### Performance Testing Infrastructure (PRIMARY FOCUS)
+4. **Performance test helper module**
    - `test/support/performance_test_helper.ex`
 
-2. **Performance benchmarks**
+5. **Performance benchmarks**
    - `test/support/performance_benchmarks.ex`
 
-3. **Comprehensive test coverage**
+6. **Comprehensive test coverage**
    - `test/support/performance_test_helper_test.exs`
 
-4. **Performance test examples**
+7. **Performance test examples**
    - `test/performance/agent_performance_test.exs`
    - `test/performance/system_performance_test.exs`
    - `test/performance/event_performance_test.exs`
 
-5. **Documentation**
+8. **Documentation**
    - Performance testing guide
    - Benchmark interpretation guide
    - Regression detection documentation
 
 ## Success Criteria
 
+### Library Performance Optimizations
+- Magic numbers extracted into named constants with performance impact measured
+- Pattern matching optimized with measurable performance improvement
+- Performance-critical functions have @spec annotations for optimization
+
+### Performance Testing Infrastructure
 - All performance testing functions implemented
 - Comprehensive performance benchmarks defined
 - Performance regression detection working
@@ -621,16 +737,22 @@ end
 - Stress testing covers all major components
 - Performance reports generated automatically
 - All tests pass consistently
-- No performance regressions introduced
+- Performance optimizations validated by test results
 
-## Files to Create
+## Files to Create/Modify
 
-1. `test/support/performance_test_helper.ex` - Main performance testing utilities
-2. `test/support/performance_benchmarks.ex` - Performance baselines and benchmarks
-3. `test/support/performance_test_helper_test.exs` - Test coverage for performance helper
-4. `test/performance/agent_performance_test.exs` - Agent performance tests
-5. `test/performance/system_performance_test.exs` - System performance tests
-6. `test/performance/event_performance_test.exs` - Event system performance tests
+### Library Performance Optimizations
+1. `lib/mabeam/foundation/communication/event_bus.ex` - Extract constants, optimize patterns
+2. `lib/mabeam/foundation/agent/lifecycle.ex` - Extract timeout constants, add specs
+3. `lib/mabeam/foundation/registry.ex` - Add performance-critical specs
+
+### Performance Testing Infrastructure
+4. `test/support/performance_test_helper.ex` - Main performance testing utilities
+5. `test/support/performance_benchmarks.ex` - Performance baselines and benchmarks
+6. `test/support/performance_test_helper_test.exs` - Test coverage for performance helper
+7. `test/performance/agent_performance_test.exs` - Agent performance tests
+8. `test/performance/system_performance_test.exs` - System performance tests
+9. `test/performance/event_performance_test.exs` - Event system performance tests
 
 ## Context Files for Reference
 
