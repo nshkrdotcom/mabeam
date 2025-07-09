@@ -10,6 +10,10 @@
 # Where third-party dependencies like ExDoc output generated docs.
 /doc/
 
+# Dialyzer PLT files
+*.plt
+*.plt.hash
+
 # If the VM crashes, it generates a dump, let's ignore it too.
 erl_crash.dump
 
@@ -17,30 +21,60 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-mabeam*.tar
+mabeam-*.tar
+mabeam-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
 
-# Mix release artifacts
-/rel/
-
-# Log files
-*.log
-
-# Local configuration
-/config/dev.exs
-/config/test.exs
-/config/runtime.exs
-
-# Secrets
-/config/secrets.exs
-
-# Test database
-/priv/repo/test.db
-
-# IDE and editor specific files
-.idea/
+# Editor and IDE files
 .vscode/
+.idea/
 *.swp
+*.swo
 *~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Elixir Language Server
+.elixir_ls/
+
+# Logs
+*.log
+log/
+logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test coverage reports
+coverage/
+coverage.html
+excoveralls/
+
+# Phoenix specific
+/assets/node_modules/
+/priv/static/
+/priv/repo/
+
+# Hex packages
+hex_metadata.config
+
+# Cache
+.cache/
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary documentation
+/docs/tmp/
