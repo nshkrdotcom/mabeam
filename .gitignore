@@ -78,3 +78,7 @@ hex_metadata.config
 
 # Temporary documentation
 /docs/tmp/
+
+
+repomix*.xml
+

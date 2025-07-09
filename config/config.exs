@@ -9,13 +9,13 @@ config :mabeam, Mabeam,
       cleanup_interval: 60_000,
       max_cleanup_batch_size: 100
     ],
-    
+
     # Event bus configuration
     event_bus: [
       max_subscribers: 1000,
       default_timeout: 5000
     ],
-    
+
     # Telemetry configuration
     telemetry: [
       enabled: true,

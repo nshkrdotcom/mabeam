@@ -29,7 +29,7 @@ defmodule Mabeam.MixProject do
       {:nimble_options, "~> 1.0"},
       {:typed_struct, "~> 0.3.0"},
       {:elixir_uuid, "~> 1.2"},
-      
+
       # Development and testing
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},

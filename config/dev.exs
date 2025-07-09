@@ -4,5 +4,4 @@ import Config
 config :logger, level: :debug
 
 # Enable debug logging for development
-config :mabeam, Mabeam,
-  debug: true
+config :mabeam, Mabeam, debug: true

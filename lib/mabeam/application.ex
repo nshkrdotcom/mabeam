@@ -1,7 +1,7 @@
 defmodule Mabeam.Application do
   @moduledoc """
   The Mabeam application.
-  
+
   This application starts the foundation layer and all core services
   needed for the unified agent system.
   """
@@ -12,14 +12,14 @@ defmodule Mabeam.Application do
   @impl true
   def start(_type, _args) do
     Logger.info("Starting Mabeam Application")
-    
+
     # Get application configuration
     config = Application.get_env(:mabeam, Mabeam, [])
-    
+
     children = [
       # Start the foundation layer
       {Mabeam.Foundation.Supervisor, [config: config]},
-      
+
       # Start telemetry
       {Mabeam.Telemetry, []}
     ]

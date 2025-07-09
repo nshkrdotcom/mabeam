@@ -4,5 +4,4 @@ import Config
 config :logger, level: :warning
 
 # Disable debug logging for tests
-config :mabeam, Mabeam,
-  debug: false
+config :mabeam, Mabeam, debug: false
