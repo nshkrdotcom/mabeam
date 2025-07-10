@@ -20,9 +20,24 @@ defmodule Mabeam.Debug do
 
   Set `config :mabeam, Mabeam, debug: true` to enable debug logging.
   """
-  def log(message, metadata \\ []) do
+  def log(message, metadata \\ [])
+
+  def log(message, metadata)
+      when is_binary(message) and is_list(metadata) do
     if debug_enabled?() do
       Logger.debug(message, metadata)
+    end
+  end
+
+  def log(message, metadata) when not is_binary(message) do
+    if debug_enabled?() do
+      Logger.debug("Invalid message type: #{inspect(message)}", metadata)
+    end
+  end
+
+  def log(message, metadata) when not is_list(metadata) do
+    if debug_enabled?() do
+      Logger.debug(message, invalid_metadata: metadata)
     end
   end
 

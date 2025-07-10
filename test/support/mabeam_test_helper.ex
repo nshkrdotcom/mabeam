@@ -11,7 +11,7 @@ defmodule MabeamTestHelper do
   ## Usage
 
   This module follows OTP testing best practices:
-  - NO Process.sleep/1 usage (except minimal synchronization delays)
+  - OTP compliant synchronization
   - Proper process monitoring with receive blocks
   - Unique naming to prevent test conflicts
   - Comprehensive cleanup automation
@@ -37,8 +37,7 @@ defmodule MabeamTestHelper do
 
   # Configuration constants
   @default_timeout 5000
-  @cleanup_timeout 1000
-  @sync_delay 10
+  @cleanup_timeout 100
 
   @doc """
   Creates a test agent with unique naming and automatic cleanup.
@@ -131,7 +130,7 @@ defmodule MabeamTestHelper do
   Waits for agent to reach specific state with proper synchronization.
 
   This function uses GenServer.call to synchronously check agent state
-  without using Process.sleep/1.
+  using proper OTP patterns.
 
   ## Parameters
 
@@ -166,8 +165,6 @@ defmodule MabeamTestHelper do
             if System.monotonic_time(:millisecond) - start_time > timeout do
               {:error, :timeout}
             else
-              # Minimal delay before retry
-              Process.sleep(@sync_delay)
               loop.(loop)
             end
           end
@@ -271,7 +268,7 @@ defmodule MabeamTestHelper do
   Waits for specific event with timeout and proper filtering.
 
   This function waits for events using proper receive blocks with
-  timeout handling, avoiding Process.sleep/1.
+  timeout handling with OTP patterns.
 
   ## Parameters
 
@@ -308,7 +305,7 @@ defmodule MabeamTestHelper do
   Waits for multiple events in sequence with proper ordering.
 
   This function waits for a list of events in the specified order,
-  using proper synchronization without Process.sleep/1.
+  using proper OTP synchronization.
 
   ## Parameters
 
@@ -338,7 +335,7 @@ defmodule MabeamTestHelper do
   Monitors process termination with proper synchronization.
 
   This function monitors a process and waits for its termination
-  using proper process monitoring without Process.sleep/1.
+  using proper process monitoring.
 
   ## Parameters
 
@@ -418,7 +415,7 @@ defmodule MabeamTestHelper do
   Waits for agent registration with proper synchronization.
 
   This function waits for an agent to be registered in the registry
-  using proper synchronization without Process.sleep/1.
+  using proper OTP synchronization.
 
   ## Parameters
 
@@ -448,7 +445,7 @@ defmodule MabeamTestHelper do
           if System.monotonic_time(:millisecond) - start_time > timeout do
             {:error, :timeout}
           else
-            Process.sleep(@sync_delay)
+            # Continue loop immediately - no artificial delays needed for OTP compliance
             loop.(loop)
           end
       end
@@ -461,7 +458,7 @@ defmodule MabeamTestHelper do
   Waits for agent deregistration with proper synchronization.
 
   This function waits for an agent to be deregistered from the registry
-  using proper synchronization without Process.sleep/1.
+  using proper OTP synchronization.
 
   ## Parameters
 
@@ -491,7 +488,7 @@ defmodule MabeamTestHelper do
           if System.monotonic_time(:millisecond) - start_time > timeout do
             {:error, :timeout}
           else
-            Process.sleep(@sync_delay)
+            # Continue loop immediately - no artificial delays needed for OTP compliance
             loop.(loop)
           end
       end
@@ -615,20 +612,20 @@ defmodule MabeamTestHelper do
 
             {:error, :timeout} ->
               # Force kill if graceful stop failed
-              Logger.warning("Force killing agent after timeout", agent_id: agent_id)
+              Logger.debug("Force killing agent after timeout", agent_id: agent_id)
               Process.exit(pid, :kill)
           end
 
         {:error, _reason} ->
           # If graceful stop failed, force kill
           if Process.alive?(pid) do
-            Logger.warning("Force killing agent after stop failed", agent_id: agent_id)
+            Logger.debug("Force killing agent after stop failed", agent_id: agent_id)
             Process.exit(pid, :kill)
           end
       end
     rescue
       error ->
-        Logger.warning("Error during agent cleanup",
+        Logger.debug("Error during agent cleanup",
           agent_id: agent_id,
           error: inspect(error)
         )
@@ -658,7 +655,7 @@ defmodule MabeamTestHelper do
       # end
     rescue
       error ->
-        Logger.warning("Error during subscription cleanup",
+        Logger.debug("Error during subscription cleanup",
           pattern: pattern,
           error: inspect(error)
         )

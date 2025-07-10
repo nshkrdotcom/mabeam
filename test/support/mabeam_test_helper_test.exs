@@ -3,7 +3,7 @@ defmodule MabeamTestHelperTest do
   Test coverage for MabeamTestHelper module.
 
   This test suite verifies that the test helper follows OTP standards:
-  - No Process.sleep usage (except minimal synchronization)
+  - OTP compliant synchronization
   - Proper process monitoring
   - Unique ID generation
   - Cleanup automation
@@ -72,7 +72,6 @@ defmodule MabeamTestHelperTest do
     end
 
     test "creates agents with different names in concurrent tests" do
-      # Create multiple agents sequentially to avoid Task/on_exit issues
       results =
         Enum.map(1..3, fn _i ->
           MabeamTestHelper.create_test_agent(:demo, capabilities: [:ping])
@@ -240,8 +239,13 @@ defmodule MabeamTestHelperTest do
       # Kill process first
       Process.exit(pid, :kill)
 
-      # Wait a moment for process to die
-      Process.sleep(10)
+      ref = Process.monitor(pid)
+
+      receive do
+        {:DOWN, ^ref, :process, ^pid, _} -> :ok
+      after
+        100 -> :ok
+      end
 
       # Then try to wait for termination
       {:ok, :already_dead} = MabeamTestHelper.wait_for_process_termination(pid, 1000)
@@ -339,17 +343,12 @@ defmodule MabeamTestHelperTest do
   end
 
   describe "OTP standards compliance" do
-    test "does not use Process.sleep except for minimal synchronization" do
-      # This is a meta-test that verifies our helper follows OTP standards
-      # We can't easily test the absence of Process.sleep, but we can verify
-      # that our synchronization functions work properly
-
+    test "follows OTP synchronization patterns" do
       {:ok, _agent, pid} =
         MabeamTestHelper.create_test_agent(:demo,
           capabilities: [:ping]
         )
 
-      # These operations should complete quickly without long sleeps
       start_time = System.monotonic_time(:millisecond)
 
       {:ok, _result} = MabeamTestHelper.execute_agent_action(pid, :ping, %{})
@@ -357,13 +356,10 @@ defmodule MabeamTestHelperTest do
       end_time = System.monotonic_time(:millisecond)
       elapsed = end_time - start_time
 
-      # Should complete quickly (within reasonable time for a simple action)
-      # 1 second should be more than enough
       assert elapsed < 1000
     end
 
     test "handles concurrent operations without conflicts" do
-      # Create multiple agents sequentially to avoid Task/on_exit issues
       results =
         Enum.map(1..5, fn _i ->
           {:ok, agent, pid} =

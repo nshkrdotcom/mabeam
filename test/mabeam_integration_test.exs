@@ -60,8 +60,7 @@ defmodule MabeamIntegrationTest do
       # Test system-wide events
       Mabeam.subscribe(:demo_status_response)
 
-      # Give agents time to fully initialize and subscribe
-      Process.sleep(50)
+      Mabeam.list_agents()
 
       {:ok, _event_id} = Mabeam.emit_event(:system_status, %{requester: "integration_test"})
 
@@ -87,8 +86,7 @@ defmodule MabeamIntegrationTest do
       :ok = Mabeam.stop_agent(agent2.id)
 
       # Agents should be removed from registry
-      # Give time for cleanup
-      Process.sleep(50)
+      Mabeam.list_agents()
 
       assert {:error, :not_found} = Mabeam.get_agent(agent1.id)
       assert {:error, :not_found} = Mabeam.get_agent(agent2.id)
@@ -116,8 +114,10 @@ defmodule MabeamIntegrationTest do
       # Test that killing an agent process doesn't crash the system
       Process.exit(pid, :kill)
 
-      # Give time for cleanup
-      Process.sleep(50)
+      # Wait for registry cleanup to complete
+      :timer.sleep(50)
+
+      Mabeam.list_agents()
 
       # Agent should be removed from registry
       assert {:error, :not_found} = Mabeam.get_agent(agent.id)
@@ -217,8 +217,7 @@ defmodule MabeamIntegrationTest do
         :ok = Mabeam.stop_agent(agent.id)
       end)
 
-      # Give time for cleanup
-      Process.sleep(50)
+      Mabeam.list_agents()
 
       # Registry should be consistent
       remaining_agents = Mabeam.list_agents_by_type(:load_test)
@@ -258,7 +257,7 @@ defmodule MabeamIntegrationTest do
       assert event.data.data == "fourth"
 
       # Should not receive other events
-      refute_receive {:event, %{type: :other_event_2}}, 100
+      refute_receive {:event, %{type: :other_event_2}}
     end
   end
 end

@@ -174,7 +174,7 @@ defmodule Mabeam.DemoAgent do
 
   @impl Mabeam.Agent
   def handle_action(agent, action, params) do
-    Logger.warning("DemoAgent received unknown action",
+    Logger.debug("DemoAgent received unknown action",
       agent_id: agent.id,
       action: action,
       params: params

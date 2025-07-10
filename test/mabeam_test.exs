@@ -15,8 +15,7 @@ defmodule MabeamTest do
       end
     end)
 
-    # Wait a moment for cleanup to complete
-    Process.sleep(10)
+    Mabeam.list_agents()
     :ok
   end
 

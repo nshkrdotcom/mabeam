@@ -70,8 +70,7 @@ defmodule Mabeam.Foundation.RegistryTest do
       # Kill the process
       Process.exit(mock_pid, :kill)
 
-      # Give the registry time to process the DOWN message
-      Process.sleep(10)
+      Registry.get_agent(agent.id)
 
       # Agent should be automatically unregistered
       assert {:error, :not_found} = Registry.get_agent(agent.id)

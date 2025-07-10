@@ -55,7 +55,24 @@ defmodule Mabeam.Telemetry do
   end
 
   defp handle_event(event_name, measurements, metadata, _config) do
-    # Log important events
+    case event_name do
+      [:mabeam, :agent | _] ->
+        handle_agent_lifecycle_event(event_name, metadata)
+
+      [:mabeam, :registry | _] ->
+        handle_registry_event(event_name, metadata)
+
+      _ ->
+        handle_generic_event(event_name, measurements, metadata)
+    end
+
+    # Here you could also send metrics to external systems like:
+    # - Prometheus
+    # - StatsD
+    # - Custom metrics collection
+  end
+
+  defp handle_agent_lifecycle_event(event_name, metadata) do
     case event_name do
       [:mabeam, :agent, :lifecycle, :started] ->
         Logger.info("Agent started",
@@ -75,6 +92,13 @@ defmodule Mabeam.Telemetry do
           reason: metadata.reason
         )
 
+      _ ->
+        handle_generic_event(event_name, %{}, metadata)
+    end
+  end
+
+  defp handle_registry_event(event_name, metadata) do
+    case event_name do
       [:mabeam, :registry, :register] ->
         Debug.log("Agent registered",
           agent_id: metadata.agent_id,
@@ -88,16 +112,15 @@ defmodule Mabeam.Telemetry do
         )
 
       _ ->
-        Debug.log("Telemetry event",
-          event: event_name,
-          measurements: measurements,
-          metadata: metadata
-        )
+        handle_generic_event(event_name, %{}, metadata)
     end
+  end
 
-    # Here you could also send metrics to external systems like:
-    # - Prometheus
-    # - StatsD
-    # - Custom metrics collection
+  defp handle_generic_event(event_name, measurements, metadata) do
+    Debug.log("Telemetry event",
+      event: event_name,
+      measurements: measurements,
+      metadata: metadata
+    )
   end
 end
