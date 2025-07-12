@@ -16,7 +16,7 @@ defmodule Mabeam.DemoAgent do
   @impl Mabeam.Agent
   def init(agent, config) do
     # Subscribe to some events
-    Mabeam.subscribe(:system_status)
+    Mabeam.subscribe("system_status")
     Mabeam.subscribe_pattern("demo.*")
 
     # Initialize state - merge existing state with defaults
@@ -44,7 +44,7 @@ defmodule Mabeam.DemoAgent do
   def handle_action(agent, :ping, _params) do
     # Emit a ping event
     {:ok, _event_id} =
-      Mabeam.emit_event(:demo_ping, %{
+      Mabeam.emit_event("demo_ping", %{
         agent_id: agent.id,
         timestamp: DateTime.utc_now()
       })
@@ -67,7 +67,7 @@ defmodule Mabeam.DemoAgent do
 
     # Emit increment event
     {:ok, _event_id} =
-      Mabeam.emit_event(:demo_increment, %{
+      Mabeam.emit_event("demo_increment", %{
         agent_id: agent.id,
         old_value: agent.state.counter,
         new_value: new_counter,
@@ -116,7 +116,7 @@ defmodule Mabeam.DemoAgent do
 
     # Emit message added event
     {:ok, _event_id} =
-      Mabeam.emit_event(:demo_message_added, %{
+      Mabeam.emit_event("demo_message_added", %{
         agent_id: agent.id,
         message: new_message
       })
@@ -147,7 +147,7 @@ defmodule Mabeam.DemoAgent do
 
     # Emit messages cleared event
     {:ok, _event_id} =
-      Mabeam.emit_event(:demo_messages_cleared, %{
+      Mabeam.emit_event("demo_messages_cleared", %{
         agent_id: agent.id,
         cleared_count: old_count
       })
@@ -163,7 +163,7 @@ defmodule Mabeam.DemoAgent do
   def handle_action(agent, :simulate_error, _params) do
     # Emit error event
     {:ok, _event_id} =
-      Mabeam.emit_event(:demo_error, %{
+      Mabeam.emit_event("demo_error", %{
         agent_id: agent.id,
         error_type: :simulated,
         timestamp: DateTime.utc_now()
@@ -187,10 +187,10 @@ defmodule Mabeam.DemoAgent do
   def handle_event(agent, event) do
     # Handle some events
     case event.type do
-      :system_status ->
+      "system_status" ->
         # Respond to system status check
         {:ok, _event_id} =
-          Mabeam.emit_event(:demo_status_response, %{
+          Mabeam.emit_event("demo_status_response", %{
             agent_id: agent.id,
             status: :healthy,
             counter: Map.get(agent.state, :counter, 0),
@@ -223,7 +223,7 @@ defmodule Mabeam.DemoAgent do
 
     # Emit termination event
     {:ok, _event_id} =
-      Mabeam.emit_event(:demo_terminated, %{
+      Mabeam.emit_event("demo_terminated", %{
         agent_id: agent.id,
         reason: reason,
         final_counter: agent.state.counter,

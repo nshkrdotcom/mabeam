@@ -21,7 +21,7 @@ defmodule Mabeam.Types.Communication do
     """
 
     field(:id, String.t(), enforce: true)
-    field(:type, atom(), enforce: true)
+    field(:type, binary(), enforce: true)
     field(:source, Mabeam.Types.agent_id() | pid(), enforce: true)
     field(:data, term())
     field(:metadata, map(), default: %{})
@@ -43,7 +43,7 @@ defmodule Mabeam.Types.Communication do
     """
 
     field(:id, String.t(), enforce: true)
-    field(:type, atom(), enforce: true)
+    field(:type, binary(), enforce: true)
     field(:source, Mabeam.Types.agent_id(), enforce: true)
     field(:target, Mabeam.Types.Communication.signal_target(), enforce: true)
     field(:data, term())
@@ -64,7 +64,7 @@ defmodule Mabeam.Types.Communication do
     """
 
     field(:id, String.t(), enforce: true)
-    field(:type, atom(), enforce: true)
+    field(:type, binary(), enforce: true)
     field(:source, Mabeam.Types.agent_id(), enforce: true)
     field(:target, Mabeam.Types.agent_id(), enforce: true)
     field(:data, term())

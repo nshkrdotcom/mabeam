@@ -932,7 +932,7 @@ defmodule SystemTestHelper do
       # Test that event system is responsive
       test_event = %{type: :system_consistency_test, data: %{timestamp: DateTime.utc_now()}}
 
-      case Mabeam.emit_event(:system_consistency_test, test_event.data) do
+      case Mabeam.emit_event("system_consistency_test", test_event.data) do
         {:ok, _event_id} -> :ok
         {:error, reason} -> {:error, {:event_system_error, reason}}
       end

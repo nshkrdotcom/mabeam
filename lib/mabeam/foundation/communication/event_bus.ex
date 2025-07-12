@@ -10,14 +10,20 @@ defmodule Mabeam.Foundation.Communication.EventBus do
   require Logger
   alias Mabeam.Debug
 
+  # Performance constants
+  @default_max_history 1000
+  @default_cleanup_interval 5000
+  @max_subscribers_per_pattern 100
+  @slow_pattern_threshold 1000
+
   alias Mabeam.Types.Communication.Event
   alias Mabeam.Types.ID
 
   @type subscription :: {pid(), reference()}
-  @type pattern :: binary() | atom() | {:pattern, binary()}
+  @type pattern :: binary() | {:pattern, binary()}
 
   @type state :: %{
-          subscriptions: %{atom() => [subscription()]},
+          subscriptions: %{binary() => [subscription()]},
           pattern_subscriptions: %{binary() => [subscription()]},
           event_history: :queue.queue(Event.t()),
           max_history: pos_integer()
@@ -30,8 +36,10 @@ defmodule Mabeam.Foundation.Communication.EventBus do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  @spec emit(atom(), term(), map()) :: {:ok, String.t()}
-  def emit(event_type, data, metadata \\ %{}) when is_atom(event_type) do
+  @spec emit(binary(), term(), map()) :: {:ok, String.t()}
+  @spec subscribe(binary()) :: :ok
+  @spec subscribe_pattern(binary()) :: :ok
+  def emit(event_type, data, metadata \\ %{}) when is_binary(event_type) do
     event = %Event{
       id: ID.event_id() |> ID.unwrap(),
       type: event_type,
@@ -48,16 +56,16 @@ defmodule Mabeam.Foundation.Communication.EventBus do
 
     # Emit telemetry
     :telemetry.execute(
-      [:mabeam, :events, event_type],
+      [:mabeam, :events, :emitted],
       %{count: 1},
-      metadata
+      Map.put(metadata, :event_type, event_type)
     )
 
     {:ok, event.id}
   end
 
-  @spec subscribe(atom()) :: :ok
-  def subscribe(event_type) when is_atom(event_type) do
+  @spec subscribe(binary()) :: :ok
+  def subscribe(event_type) when is_binary(event_type) do
     GenServer.call(__MODULE__, {:subscribe, event_type, self()})
   end
 
@@ -66,8 +74,8 @@ defmodule Mabeam.Foundation.Communication.EventBus do
     GenServer.call(__MODULE__, {:subscribe_pattern, pattern, self()})
   end
 
-  @spec unsubscribe(atom()) :: :ok
-  def unsubscribe(event_type) when is_atom(event_type) do
+  @spec unsubscribe(binary()) :: :ok
+  def unsubscribe(event_type) when is_binary(event_type) do
     GenServer.call(__MODULE__, {:unsubscribe, event_type, self()})
   end
 
@@ -92,7 +100,7 @@ defmodule Mabeam.Foundation.Communication.EventBus do
       subscriptions: %{},
       pattern_subscriptions: %{},
       event_history: :queue.new(),
-      max_history: Keyword.get(opts, :max_history, 1000)
+      max_history: Keyword.get(opts, :max_history, @default_max_history)
     }
 
     {:ok, state}
@@ -284,44 +292,72 @@ defmodule Mabeam.Foundation.Communication.EventBus do
   end
 
   defp event_matches_pattern?(event, pattern) do
-    event_type_string = Atom.to_string(event.type)
+    start_time = System.monotonic_time(:microsecond)
+    event_type_string = event.type
 
+    result = match_event_pattern?(pattern, event_type_string)
+    
+    track_pattern_matching_performance(pattern, event_type_string, start_time)
+    
+    result
+  end
+
+  defp match_event_pattern?(pattern, event_type_string) do
     case pattern do
-      "*" ->
-        true
-
-      "**" ->
-        true
-
-      pattern_string when is_binary(pattern_string) ->
-        # Handle both dots and underscores as separators
-        pattern_parts = String.split(pattern_string, ".")
-        event_parts = String.split(event_type_string, [".", "_"])
-        match_parts(pattern_parts, event_parts)
+      "*" -> true
+      "**" -> true
+      ^event_type_string -> true
+      _ -> match_wildcard_pattern(pattern, event_type_string)
     end
   end
 
-  defp match_parts([], []), do: true
-  defp match_parts(["**"], _), do: true
-
-  defp match_parts([part | pattern_rest], [part | event_rest]),
-    do: match_parts(pattern_rest, event_rest)
-
-  # Handle "*" patterns
-  defp match_parts(["*" | pattern_rest], event_parts) when length(event_parts) > 0 do
-    case pattern_rest do
-      # "*" at the end matches any remaining parts
-      [] ->
-        true
-
-      _ ->
-        # "*" in the middle - try matching with one part consumed
-        case event_parts do
-          [_ | event_rest] -> match_parts(pattern_rest, event_rest)
-          [] -> false
+  defp match_wildcard_pattern(pattern, event_type_string) do
+    # Fast string-based pattern matching without regex
+    # Handle common event bus patterns: "prefix*", "prefix_*", "prefix.*"
+    case String.split(pattern, "*", parts: 2) do
+      [prefix] -> 
+        # Pattern like "test*" - check if event starts with "test"
+        String.starts_with?(event_type_string, prefix)
+      [prefix, suffix] -> 
+        # Pattern like "test.*" or "test_suffix"
+        # For event bus patterns, "test.*" should match "test_event", "test_action", etc.
+        # Normalize the prefix by treating "test." as "test"
+        normalized_prefix = 
+          if String.ends_with?(prefix, ".") do
+            String.slice(prefix, 0..-2//1)  # Remove trailing dot
+          else
+            prefix
+          end
+        
+        prefix_len = String.length(normalized_prefix)
+        suffix_len = String.length(suffix)
+        event_len = String.length(event_type_string)
+        
+        # Event must be long enough to contain both prefix and suffix
+        if event_len >= prefix_len + suffix_len do
+          String.starts_with?(event_type_string, normalized_prefix) and 
+          String.ends_with?(event_type_string, suffix)
+        else
+          false
         end
     end
   end
 
-  defp match_parts(_, _), do: false
+  defp track_pattern_matching_performance(pattern, event_type, start_time) do
+    duration = System.monotonic_time(:microsecond) - start_time
+    
+    if duration > @slow_pattern_threshold do
+      Logger.warning("Slow pattern matching", 
+        pattern: pattern, 
+        event_type: event_type, 
+        duration_microseconds: duration
+      )
+    end
+    
+    :telemetry.execute([:mabeam, :event_bus, :pattern_match], 
+      %{duration: duration}, 
+      %{pattern: pattern, event_type: event_type}
+    )
+  end
+
 end

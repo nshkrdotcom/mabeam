@@ -67,10 +67,22 @@ defmodule Mabeam.Foundation.RegistryTest do
       assert :ok = Registry.register(agent, mock_pid)
       assert {:ok, _} = Registry.get_agent(agent.id)
 
+      # Monitor the process to ensure we know when it dies
+      ref = Process.monitor(mock_pid)
+      
       # Kill the process
       Process.exit(mock_pid, :kill)
 
-      Registry.get_agent(agent.id)
+      # Wait for the process to actually die
+      receive do
+        {:DOWN, ^ref, :process, ^mock_pid, _reason} -> :ok
+      after
+        1000 -> flunk("Process did not terminate")
+      end
+
+      # Use a synchronous call to the Registry GenServer to ensure
+      # the :DOWN message has been processed (FIFO guarantee)
+      _ = Registry.get_agent(agent.id)
 
       # Agent should be automatically unregistered
       assert {:error, :not_found} = Registry.get_agent(agent.id)

@@ -13,6 +13,11 @@ defmodule Mabeam.Foundation.Agent.Lifecycle do
   require Logger
 
   alias Mabeam.Types.Agent, as: AgentTypes
+
+  # Performance constants
+  @default_start_timeout 5000
+  @default_stop_timeout 3000
+  @max_restart_attempts 3
   alias Mabeam.Types.Agent.Agent
   alias Mabeam.Types.ID
   alias Mabeam.Foundation.Registry
@@ -44,6 +49,10 @@ defmodule Mabeam.Foundation.Agent.Lifecycle do
   - `{:error, reason}` - Failed to start agent
   """
   @spec start_agent(agent_module(), agent_config()) :: lifecycle_result()
+  @spec stop_agent(binary(), term()) :: :ok | {:error, term()}
+  @spec restart_agent(binary(), agent_config()) :: lifecycle_result()
+  @spec update_lifecycle_state(binary(), AgentTypes.lifecycle_state()) :: {:ok, Agent.t()} | {:error, term()}
+  @spec get_lifecycle_state(binary()) :: {:ok, AgentTypes.lifecycle_state()} | {:error, :not_found}
   def start_agent(agent_module, config \\ []) when is_atom(agent_module) do
     # Generate or use provided ID
     agent_id =
@@ -247,7 +256,10 @@ defmodule Mabeam.Foundation.Agent.Lifecycle do
 
   defp stop_agent_process(pid, reason) do
     if Process.alive?(pid) do
-      Process.exit(pid, reason)
+      # Use the provided reason for termination
+      exit_reason = reason
+      
+      Process.exit(pid, exit_reason)
       :ok
     else
       :ok
@@ -271,13 +283,13 @@ defmodule Mabeam.Foundation.Agent.Lifecycle do
         lifecycle_state: agent.lifecycle
       })
 
-    EventBus.emit(:"agent_lifecycle.#{event_type}", event_data, full_metadata)
+    EventBus.emit("agent_lifecycle.#{event_type}", event_data, full_metadata)
 
     # Also emit telemetry
     :telemetry.execute(
-      [:mabeam, :agent, :lifecycle, event_type],
+      [:mabeam, :agent, :lifecycle],
       %{count: 1},
-      full_metadata
+      Map.put(full_metadata, :event_type, event_type)
     )
   end
 end

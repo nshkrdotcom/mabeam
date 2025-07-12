@@ -526,12 +526,12 @@ defmodule EventTestHelper do
           trigger: fn -> 
             # Crash a subscriber process
             pid = spawn(fn -> Process.exit(self(), :kill) end)
-            Mabeam.subscribe(:test_event)
+            Mabeam.subscribe("test_event")
             pid
           end,
           verify_recovery: fn ->
             # Verify event system still works
-            Mabeam.emit_event(:test_event, %{data: "test"})
+            Mabeam.emit_event("test_event", %{data: "test"})
           end
         }
       ]
@@ -768,8 +768,7 @@ defmodule EventTestHelper do
                   :ok
 
                 {:error, :timeout} ->
-                  # This might be ok if the pattern doesn't match
-                  :ok
+                  {:error, {:event_not_received, test_event_type, timeout}}
               end
 
             {:error, reason} ->
@@ -788,21 +787,26 @@ defmodule EventTestHelper do
     end
   end
 
-  @spec generate_test_event_for_pattern(term()) :: atom()
-  defp generate_test_event_for_pattern(pattern) when is_atom(pattern), do: pattern
+  @spec generate_test_event_for_pattern(term()) :: binary()
+  defp generate_test_event_for_pattern(pattern) when is_atom(pattern), do: Atom.to_string(pattern)
 
   defp generate_test_event_for_pattern(pattern) when is_binary(pattern) do
     # Generate an event type that should match the pattern
     case String.split(pattern, "*") do
       [prefix, _] ->
-        String.to_atom("#{prefix}test_event")
+        # Generate string event that matches pattern
+        "#{prefix}test_event"
+
+      [exact_match] ->
+        # No wildcard, return exact match
+        exact_match
 
       _ ->
-        :pattern_test_event
+        "pattern_test_event"
     end
   end
 
-  defp generate_test_event_for_pattern(_), do: :unknown_pattern_test
+  defp generate_test_event_for_pattern(_), do: "unknown_pattern_test"
 
   @spec test_unsubscription_patterns(list(), non_neg_integer()) :: :ok | {:error, term()}
   defp test_unsubscription_patterns(_patterns, _timeout) do

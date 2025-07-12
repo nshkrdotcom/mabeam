@@ -76,14 +76,14 @@ defmodule MabeamTest do
 
   test "event system works correctly" do
     # Subscribe to events
-    Mabeam.subscribe(:test_event)
+    Mabeam.subscribe("test_event")
 
     # Emit an event
-    {:ok, event_id} = Mabeam.emit_event(:test_event, %{data: "test"}, %{source: "test"})
+    {:ok, event_id} = Mabeam.emit_event("test_event", %{data: "test"}, %{source: "test"})
 
     # Should receive the event
     assert_receive {:event, event}
-    assert event.type == :test_event
+    assert event.type == "test_event"
     assert event.data == %{data: "test"}
     assert event.metadata == %{source: "test"}
     assert is_binary(event_id)
@@ -91,18 +91,18 @@ defmodule MabeamTest do
     # Test pattern subscription
     Mabeam.subscribe_pattern("test.*")
 
-    {:ok, _event_id} = Mabeam.emit_event(:test_pattern, %{data: "pattern"})
+    {:ok, _event_id} = Mabeam.emit_event("test_pattern", %{data: "pattern"})
 
     # Should receive the pattern event
     assert_receive {:event, event}
-    assert event.type == :test_pattern
+    assert event.type == "test_pattern"
     assert event.data == %{data: "pattern"}
   end
 
   test "can retrieve event history" do
     # Emit some events
-    {:ok, _id1} = Mabeam.emit_event(:history_event_1, %{data: "first"})
-    {:ok, _id2} = Mabeam.emit_event(:history_event_2, %{data: "second"})
+    {:ok, _id1} = Mabeam.emit_event("history_event_1", %{data: "first"})
+    {:ok, _id2} = Mabeam.emit_event("history_event_2", %{data: "second"})
 
     # Get history
     history = Mabeam.get_event_history(10)
@@ -113,7 +113,7 @@ defmodule MabeamTest do
     # Find our events in the history
     our_events =
       Enum.filter(history, fn event ->
-        event.type in [:history_event_1, :history_event_2]
+        event.type in ["history_event_1", "history_event_2"]
       end)
 
     assert length(our_events) >= 2

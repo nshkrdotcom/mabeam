@@ -159,7 +159,7 @@ defmodule MabeamTestHelperTest do
   describe "event system helpers" do
     test "subscribes to events and receives them" do
       # Subscribe to events
-      :ok = MabeamTestHelper.subscribe_to_events([:demo_ping])
+      :ok = MabeamTestHelper.subscribe_to_events(["demo_ping"])
 
       # Create agent and execute action
       {:ok, _agent, pid} =
@@ -170,24 +170,24 @@ defmodule MabeamTestHelperTest do
       {:ok, _result} = MabeamTestHelper.execute_agent_action(pid, :ping, %{})
 
       # Wait for event
-      {:ok, event} = MabeamTestHelper.wait_for_event(:demo_ping, 2000)
+      {:ok, event} = MabeamTestHelper.wait_for_event("demo_ping", 2000)
 
       # Verify event structure
-      assert event.type == :demo_ping
+      assert event.type == "demo_ping"
       assert is_map(event.data)
     end
 
     test "handles event timeout gracefully" do
       # Subscribe to events
-      :ok = MabeamTestHelper.subscribe_to_events([:nonexistent_event])
+      :ok = MabeamTestHelper.subscribe_to_events(["nonexistent_event"])
 
       # Wait for event that won't come
-      {:error, :timeout} = MabeamTestHelper.wait_for_event(:nonexistent_event, 100)
+      {:error, :timeout} = MabeamTestHelper.wait_for_event("nonexistent_event", 100)
     end
 
     test "waits for multiple events in sequence" do
       # Subscribe to events
-      :ok = MabeamTestHelper.subscribe_to_events([:demo_ping, :demo_increment])
+      :ok = MabeamTestHelper.subscribe_to_events(["demo_ping", "demo_increment"])
 
       # Create agent
       {:ok, _agent, pid} =
@@ -200,12 +200,12 @@ defmodule MabeamTestHelperTest do
       {:ok, _result2} = MabeamTestHelper.execute_agent_action(pid, :increment, %{})
 
       # Wait for events in sequence
-      {:ok, events} = MabeamTestHelper.wait_for_events([:demo_ping, :demo_increment], 3000)
+      {:ok, events} = MabeamTestHelper.wait_for_events(["demo_ping", "demo_increment"], 3000)
 
       # Verify we got both events
       assert length(events) == 2
-      assert Enum.at(events, 0).type == :demo_ping
-      assert Enum.at(events, 1).type == :demo_increment
+      assert Enum.at(events, 0).type == "demo_ping"
+      assert Enum.at(events, 1).type == "demo_increment"
     end
   end
 
@@ -331,7 +331,7 @@ defmodule MabeamTestHelperTest do
           capabilities: [:ping]
         )
 
-      :ok = MabeamTestHelper.subscribe_to_events([:demo_ping])
+      :ok = MabeamTestHelper.subscribe_to_events(["demo_ping"])
 
       # Run cleanup
       :ok = MabeamTestHelper.cleanup_all_test_resources()

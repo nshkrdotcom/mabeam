@@ -179,15 +179,15 @@ defmodule Mabeam.DemoAgentTest do
 
       # Wait for the specific demo_ping event (ignore other events)
       receive do
-        {:event, %{type: :demo_ping} = event} ->
-          assert event.type == :demo_ping
+        {:event, %{type: "demo_ping"} = event} ->
+          assert event.type == "demo_ping"
           assert event.data.agent_id == agent.id
 
         {:event, _other_event} ->
           # If we get a different event, wait for the ping event
           receive do
-            {:event, %{type: :demo_ping} = event} ->
-              assert event.type == :demo_ping
+            {:event, %{type: "demo_ping"} = event} ->
+              assert event.type == "demo_ping"
               assert event.data.agent_id == agent.id
           after
             1000 -> flunk("Did not receive demo_ping event")
@@ -202,16 +202,16 @@ defmodule Mabeam.DemoAgentTest do
       # Wait for the specific demo_increment event (ignore other events)
       increment_event =
         receive do
-          {:event, %{type: :demo_increment} = event} ->
-            assert event.type == :demo_increment
+          {:event, %{type: "demo_increment"} = event} ->
+            assert event.type == "demo_increment"
             assert event.data.agent_id == agent.id
             event
 
           {:event, _other_event} ->
             # If we get a different event, wait for the increment event
             receive do
-              {:event, %{type: :demo_increment} = event} ->
-                assert event.type == :demo_increment
+              {:event, %{type: "demo_increment"} = event} ->
+                assert event.type == "demo_increment"
                 assert event.data.agent_id == agent.id
                 event
             after
@@ -229,16 +229,16 @@ defmodule Mabeam.DemoAgentTest do
       # Wait for the specific demo_message_added event (ignore other events)
       message_event =
         receive do
-          {:event, %{type: :demo_message_added} = event} ->
-            assert event.type == :demo_message_added
+          {:event, %{type: "demo_message_added"} = event} ->
+            assert event.type == "demo_message_added"
             assert event.data.agent_id == agent.id
             event
 
           {:event, _other_event} ->
             # If we get a different event, wait for the message_added event
             receive do
-              {:event, %{type: :demo_message_added} = event} ->
-                assert event.type == :demo_message_added
+              {:event, %{type: "demo_message_added"} = event} ->
+                assert event.type == "demo_message_added"
                 assert event.data.agent_id == agent.id
                 event
             after
@@ -282,7 +282,7 @@ defmodule Mabeam.DemoAgentTest do
 
     test "handles system events" do
       # Subscribe to demo status responses
-      Mabeam.subscribe(:demo_status_response)
+      Mabeam.subscribe("demo_status_response")
 
       {:ok, agent, _pid} =
         DemoAgent.start_link(
@@ -292,11 +292,11 @@ defmodule Mabeam.DemoAgentTest do
         )
 
       # Emit system status event
-      {:ok, _event_id} = Mabeam.emit_event(:system_status, %{requester: "test"})
+      {:ok, _event_id} = Mabeam.emit_event("system_status", %{requester: "test"})
 
       # Should receive status response - filter by agent ID to handle concurrent tests
-      event = receive_event_for_agent(agent.id, :demo_status_response, 5000)
-      assert event.type == :demo_status_response
+      event = receive_event_for_agent(agent.id, "demo_status_response", 5000)
+      assert event.type == "demo_status_response"
       assert event.data.agent_id == agent.id
       assert event.data.status == :healthy
       assert event.data.counter == 5

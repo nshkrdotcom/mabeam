@@ -28,7 +28,7 @@ defmodule MabeamTestHelper do
       {:ok, result} = MabeamTestHelper.execute_agent_action(pid, :ping, %{})
       
       # Wait for events with proper filtering
-      event = MabeamTestHelper.wait_for_event(:demo_ping)
+      event = MabeamTestHelper.wait_for_event("demo_ping")
       
       # Cleanup is automatic via ExUnit.Callbacks.on_exit/1
   """
@@ -239,7 +239,7 @@ defmodule MabeamTestHelper do
 
   ## Examples
 
-      :ok = MabeamTestHelper.subscribe_to_events([:demo_ping, :demo_increment])
+      :ok = MabeamTestHelper.subscribe_to_events(["demo_ping", "demo_increment"])
       :ok = MabeamTestHelper.subscribe_to_events(["demo.*"], timeout: 1000)
   """
   @spec subscribe_to_events(list(), keyword()) :: :ok | {:error, term()}
@@ -251,6 +251,9 @@ defmodule MabeamTestHelper do
             Mabeam.subscribe_pattern(pattern)
 
           event_type when is_atom(event_type) ->
+            Mabeam.subscribe(Atom.to_string(event_type))
+
+          event_type when is_binary(event_type) ->
             Mabeam.subscribe(event_type)
         end
       end)
@@ -282,22 +285,34 @@ defmodule MabeamTestHelper do
 
   ## Examples
 
-      {:ok, event} = MabeamTestHelper.wait_for_event(:demo_ping)
-      {:error, :timeout} = MabeamTestHelper.wait_for_event(:nonexistent, 1000)
+      {:ok, event} = MabeamTestHelper.wait_for_event("demo_ping")
+      {:error, :timeout} = MabeamTestHelper.wait_for_event("nonexistent", 1000)
   """
-  @spec wait_for_event(atom(), non_neg_integer()) ::
+  @spec wait_for_event(binary(), non_neg_integer()) ::
           {:ok, map()} | {:error, :timeout}
   def wait_for_event(event_type, timeout \\ @default_timeout) do
+    wait_for_event_with_sleep(event_type, timeout, System.monotonic_time(:millisecond))
+  end
+
+  defp wait_for_event_with_sleep(event_type, timeout, start_time) do
     receive do
       {:event, %{type: ^event_type} = event} ->
         {:ok, event}
-
       {:event, _other_event} ->
-        # Ignore other events and continue waiting
-        wait_for_event(event_type, timeout)
+        # Check timeout before sleeping
+        if System.monotonic_time(:millisecond) - start_time >= timeout do
+          {:error, :timeout}
+        else
+          :timer.sleep(2)  # Small sleep to prevent busy-wait
+          wait_for_event_with_sleep(event_type, timeout, start_time)
+        end
     after
-      timeout ->
-        {:error, :timeout}
+      50 ->  # Short timeout for polling
+        if System.monotonic_time(:millisecond) - start_time >= timeout do
+          {:error, :timeout}
+        else
+          wait_for_event_with_sleep(event_type, timeout, start_time)
+        end
     end
   end
 
@@ -324,7 +339,7 @@ defmodule MabeamTestHelper do
         :demo_increment
       ])
   """
-  @spec wait_for_events(list(atom()), non_neg_integer()) ::
+  @spec wait_for_events(list(binary()), non_neg_integer()) ::
           {:ok, list(map())} | {:error, {:timeout, list(map())}}
   def wait_for_events(event_types, timeout \\ @default_timeout) do
     start_time = System.monotonic_time(:millisecond)
@@ -683,7 +698,7 @@ defmodule MabeamTestHelper do
     end
   end
 
-  @spec wait_for_events_loop(list(atom()), list(map()), integer(), non_neg_integer()) ::
+  @spec wait_for_events_loop(list(binary()), list(map()), integer(), non_neg_integer()) ::
           {:ok, list(map())} | {:error, {:timeout, list(map())}}
   defp wait_for_events_loop([], received_events, _start_time, _timeout) do
     {:ok, Enum.reverse(received_events)}

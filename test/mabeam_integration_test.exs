@@ -44,33 +44,33 @@ defmodule MabeamIntegrationTest do
 
       # Should have received events from both agents
       assert_receive {:event, event}
-      assert event.type == :demo_ping
+      assert event.type == "demo_ping"
       assert event.data.agent_id == agent1.id
 
       assert_receive {:event, event}
-      assert event.type == :demo_message_added
+      assert event.type == "demo_message_added"
       assert event.data.agent_id == agent2.id
 
       # Test agent coordination
       {:ok, _result} = DemoAgent.execute_action(pid1, :increment, %{"amount" => 3})
       assert_receive {:event, event}
-      assert event.type == :demo_increment
+      assert event.type == "demo_increment"
       assert event.data.amount == 3
 
       # Test system-wide events
-      Mabeam.subscribe(:demo_status_response)
+      Mabeam.subscribe("demo_status_response")
 
       Mabeam.list_agents()
 
-      {:ok, _event_id} = Mabeam.emit_event(:system_status, %{requester: "integration_test"})
+      {:ok, _event_id} = Mabeam.emit_event("system_status", %{requester: "integration_test"})
 
       # Should receive responses from both agents
       assert_receive {:event, event}
-      assert event.type == :demo_status_response
+      assert event.type == "demo_status_response"
       assert event.data.status == :healthy
 
       assert_receive {:event, event}
-      assert event.type == :demo_status_response
+      assert event.type == "demo_status_response"
       assert event.data.status == :healthy
 
       # Test agent restart
@@ -114,10 +114,8 @@ defmodule MabeamIntegrationTest do
       # Test that killing an agent process doesn't crash the system
       Process.exit(pid, :kill)
 
-      # Wait for registry cleanup to complete
-      :timer.sleep(50)
-
-      Mabeam.list_agents()
+      # Use GenServer call to ensure registry cleanup is processed
+      Mabeam.list_agents()  # This synchronizes with registry
 
       # Agent should be removed from registry
       assert {:error, :not_found} = Mabeam.get_agent(agent.id)
@@ -169,8 +167,8 @@ defmodule MabeamIntegrationTest do
         end)
 
       # Group events by type
-      ping_events = Enum.filter(all_events, &(&1.type == :demo_ping))
-      increment_events = Enum.filter(all_events, &(&1.type == :demo_increment))
+      ping_events = Enum.filter(all_events, &(&1.type == "demo_ping"))
+      increment_events = Enum.filter(all_events, &(&1.type == "demo_increment"))
 
       # Should have received exactly 3 ping events and 3 increment events
       assert length(ping_events) == 3
@@ -237,9 +235,9 @@ defmodule MabeamIntegrationTest do
 
     test "event history and pattern matching" do
       # Emit various events
-      {:ok, _id1} = Mabeam.emit_event(:test_event_1, %{data: "first"})
-      {:ok, _id2} = Mabeam.emit_event(:test_event_2, %{data: "second"})
-      {:ok, _id3} = Mabeam.emit_event(:other_event, %{data: "third"})
+      {:ok, _id1} = Mabeam.emit_event("test_event_1", %{data: "first"})
+      {:ok, _id2} = Mabeam.emit_event("test_event_2", %{data: "second"})
+      {:ok, _id3} = Mabeam.emit_event("other_event", %{data: "third"})
 
       # Get history
       history = Mabeam.get_event_history(10)
@@ -248,12 +246,12 @@ defmodule MabeamIntegrationTest do
       # Test pattern subscription
       Mabeam.subscribe_pattern("test.*")
 
-      {:ok, _id4} = Mabeam.emit_event(:test_event_3, %{data: "fourth"})
-      {:ok, _id5} = Mabeam.emit_event(:other_event_2, %{data: "fifth"})
+      {:ok, _id4} = Mabeam.emit_event("test_event_3", %{data: "fourth"})
+      {:ok, _id5} = Mabeam.emit_event("other_event_2", %{data: "fifth"})
 
       # Should only receive test events
       assert_receive {:event, event}
-      assert event.type == :test_event_3
+      assert event.type == "test_event_3"
       assert event.data.data == "fourth"
 
       # Should not receive other events

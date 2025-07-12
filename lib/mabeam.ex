@@ -188,7 +188,7 @@ defmodule Mabeam do
 
   - `event_type` - The type of events to subscribe to
   """
-  @spec subscribe(atom()) :: :ok
+  @spec subscribe(binary()) :: :ok
   def subscribe(event_type) do
     EventBus.subscribe(event_type)
   end
@@ -214,7 +214,7 @@ defmodule Mabeam do
   - `data` - The event data
   - `metadata` - Additional metadata (optional)
   """
-  @spec emit_event(atom(), term(), map()) :: {:ok, String.t()}
+  @spec emit_event(binary(), term(), map()) :: {:ok, String.t()}
   def emit_event(event_type, data, metadata \\ %{}) do
     EventBus.emit(event_type, data, metadata)
   end

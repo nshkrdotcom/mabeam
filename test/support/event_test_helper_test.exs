@@ -12,13 +12,13 @@ defmodule EventTestHelperTest do
       case setup_event_test_environment(
              # Reduced number to avoid timeouts
              subscribers: 1,
-             event_patterns: [:demo_ping],
+             event_patterns: ["demo_ping"],
              event_history_size: 50,
              enable_history: true
            ) do
         %{subscribers: subscribers, patterns: patterns, history: history} ->
           assert length(subscribers) == 1
-          assert :demo_ping in patterns
+          assert "demo_ping" in patterns
           assert is_list(history)
 
         {:error, _reason} ->
@@ -43,7 +43,7 @@ defmodule EventTestHelperTest do
         setup_event_test_environment(
           subscribers: 1,
           subscriber_names: [:custom_sub1],
-          event_patterns: [:test_event]
+          event_patterns: ["test_event"]
         )
 
       assert length(subscribers) == 1
@@ -54,7 +54,7 @@ defmodule EventTestHelperTest do
 
   describe "test_event_subscription/2" do
     test "tests event subscription with automatic cleanup" do
-      event_patterns = [:demo_ping, :demo_increment]
+      event_patterns = ["demo_ping", "demo_increment"]
 
       assert :ok =
                test_event_subscription(event_patterns,
@@ -65,7 +65,7 @@ defmodule EventTestHelperTest do
     end
 
     test "handles pattern and atom subscriptions" do
-      event_patterns = [:demo_ping, "demo.*", :system_status]
+      event_patterns = ["demo_ping", "demo.*", "system_status"]
 
       assert :ok =
                test_event_subscription(event_patterns,
@@ -76,7 +76,7 @@ defmodule EventTestHelperTest do
 
     test "handles subscription failures gracefully" do
       # Test with potentially problematic patterns
-      event_patterns = [:valid_event]
+      event_patterns = ["valid_event"]
 
       case test_event_subscription(event_patterns, timeout: 1000) do
         :ok ->
@@ -95,12 +95,12 @@ defmodule EventTestHelperTest do
       _event_env =
         setup_event_test_environment(
           subscribers: 1,
-          event_patterns: [:demo_ping, :demo_increment]
+          event_patterns: ["demo_ping", "demo_increment"]
         )
 
       test_events = [
-        %{type: :demo_ping, data: %{agent_id: "test_agent"}},
-        %{type: :demo_increment, data: %{amount: 5}}
+        %{type: "demo_ping", data: %{agent_id: "test_agent"}},
+        %{type: "demo_increment", data: %{amount: 5}}
       ]
 
       # Simple propagation test - just verify events can be sent
@@ -108,9 +108,9 @@ defmodule EventTestHelperTest do
              test_events,
              [
                # May not reach subscribers due to test isolation
-               {:demo_ping, 0},
+               {"demo_ping", 0},
                # May not reach subscribers due to test isolation
-               {:demo_increment, 0}
+               {"demo_increment", 0}
              ],
              timeout: 1000
            ) do
@@ -125,16 +125,16 @@ defmodule EventTestHelperTest do
 
     test "handles parallel event sending" do
       test_events = [
-        %{type: :test_event1, data: %{id: 1}},
-        %{type: :test_event2, data: %{id: 2}}
+        %{type: "test_event1", data: %{id: 1}},
+        %{type: "test_event2", data: %{id: 2}}
       ]
 
       # Test parallel sending (may not have subscribers)
       case test_event_propagation(
              test_events,
              [
-               {:test_event1, 0},
-               {:test_event2, 0}
+               {"test_event1", 0},
+               {"test_event2", 0}
              ],
              parallel_events: true,
              timeout: 1000
@@ -149,13 +149,13 @@ defmodule EventTestHelperTest do
     test "tests event filtering and pattern matching" do
       filter_scenarios = [
         %{
-          pattern: :demo_ping,
+          pattern: "demo_ping",
           events: [
-            %{type: :demo_ping, data: %{}},
-            %{type: :demo_increment, data: %{}}
+            %{type: "demo_ping", data: %{}},
+            %{type: "demo_increment", data: %{}}
           ],
-          expected_matches: [:demo_ping],
-          expected_non_matches: [:demo_increment]
+          expected_matches: ["demo_ping"],
+          expected_non_matches: ["demo_increment"]
         }
       ]
 
@@ -167,11 +167,11 @@ defmodule EventTestHelperTest do
         %{
           pattern: "demo.*",
           events: [
-            %{type: :demo_ping, data: %{}},
-            %{type: :system_status, data: %{}}
+            %{type: "demo_ping", data: %{}},
+            %{type: "system_status", data: %{}}
           ],
-          expected_matches: [:demo_ping],
-          expected_non_matches: [:system_status]
+          expected_matches: ["demo_ping"],
+          expected_non_matches: ["system_status"]
         }
       ]
 
@@ -183,12 +183,12 @@ defmodule EventTestHelperTest do
   describe "test_event_ordering/3" do
     test "tests event ordering and sequencing" do
       event_sequence = [
-        %{type: :task_start, data: %{id: 1}},
-        %{type: :task_progress, data: %{id: 1, progress: 50}},
-        %{type: :task_complete, data: %{id: 1}}
+        %{type: "task_start", data: %{id: 1}},
+        %{type: "task_progress", data: %{id: 1, progress: 50}},
+        %{type: "task_complete", data: %{id: 1}}
       ]
 
-      expected_order = [:task_start, :task_progress, :task_complete]
+      expected_order = ["task_start", "task_progress", "task_complete"]
 
       # Event ordering tests are complex without proper event system setup
       case test_event_ordering(event_sequence, expected_order,
@@ -206,8 +206,8 @@ defmodule EventTestHelperTest do
 
     test "supports custom order validation" do
       event_sequence = [
-        %{type: :start, data: %{}},
-        %{type: :end, data: %{}}
+        %{type: "start", data: %{}},
+        %{type: "end", data: %{}}
       ]
 
       order_validator = fn events ->
@@ -224,11 +224,11 @@ defmodule EventTestHelperTest do
 
     test "handles flexible ordering requirements" do
       event_sequence = [
-        %{type: :event_a, data: %{}},
-        %{type: :event_b, data: %{}}
+        %{type: "event_a", data: %{}},
+        %{type: "event_b", data: %{}}
       ]
 
-      case test_event_ordering(event_sequence, [:event_a, :event_b],
+      case test_event_ordering(event_sequence, ["event_a", "event_b"],
              strict_ordering: false,
              allow_interleaving: true
            ) do
@@ -267,11 +267,11 @@ defmodule EventTestHelperTest do
           failure_type: :invalid_event,
           trigger: fn ->
             # Try to emit invalid event
-            Mabeam.emit_event(:test_event, %{data: "test"})
+            Mabeam.emit_event("test_event", %{data: "test"})
           end,
           verify_recovery: fn ->
             # Verify system still works
-            Mabeam.emit_event(:recovery_test, %{status: :ok})
+            Mabeam.emit_event("recovery_test", %{status: :ok})
           end
         },
         %{
@@ -294,7 +294,7 @@ defmodule EventTestHelperTest do
       # Test with very short timeouts
       case setup_event_test_environment(
              subscribers: 1,
-             event_patterns: [:test_event],
+             event_patterns: ["test_event"],
              # Very short
              timeout: 50
            ) do
@@ -308,7 +308,7 @@ defmodule EventTestHelperTest do
       _event_env =
         setup_event_test_environment(
           subscribers: 2,
-          event_patterns: [:test1, :test2]
+          event_patterns: ["test1", "test2"]
         )
 
       # Cleanup is handled automatically
@@ -318,16 +318,16 @@ defmodule EventTestHelperTest do
 
     test "handles edge cases in event data" do
       test_events = [
-        %{type: :edge_case_event, data: %{}},
-        %{type: :another_edge_case, data: %{complex: %{nested: "data"}}}
+        %{type: "edge_case_event", data: %{}},
+        %{type: "another_edge_case", data: %{complex: %{nested: "data"}}}
       ]
 
       # These should not crash the system
       case test_event_propagation(
              test_events,
              [
-               {:edge_case_event, 0},
-               {:another_edge_case, 0}
+               {"edge_case_event", 0},
+               {"another_edge_case", 0}
              ],
              timeout: 500
            ) do
@@ -340,19 +340,19 @@ defmodule EventTestHelperTest do
       # Test that event helpers work with the main MABEAM system
 
       # Subscribe to an event
-      subscribe_to_events([:integration_test])
+      subscribe_to_events(["integration_test"])
 
       # Emit an event
       {:ok, _event_id} =
-        Mabeam.emit_event(:integration_test, %{
+        Mabeam.emit_event("integration_test", %{
           message: "Helper integration test",
           timestamp: DateTime.utc_now()
         })
 
       # Try to receive it (may timeout in test environment)
-      case wait_for_event(:integration_test, 1000) do
+      case wait_for_event("integration_test", 1000) do
         {:ok, event} ->
-          assert event.type == :integration_test
+          assert event.type == "integration_test"
           assert is_map(event.data)
 
         {:error, :timeout} ->

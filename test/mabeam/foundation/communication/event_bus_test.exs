@@ -11,20 +11,20 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
 
   describe "emit/3" do
     test "emits an event successfully" do
-      {:ok, event_id} = EventBus.emit(:test_event, %{data: "test"}, %{source: "test"})
+      {:ok, event_id} = EventBus.emit("test_event", %{data: "test"}, %{source: "test"})
 
       assert is_binary(event_id)
     end
 
     test "creates proper event structure" do
       # Subscribe to catch the event
-      EventBus.subscribe(:test_event)
+      EventBus.subscribe("test_event")
 
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"}, %{source: "test"})
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"}, %{source: "test"})
 
       # Should receive the event
       assert_receive {:event, %Event{} = event}
-      assert event.type == :test_event
+      assert event.type == "test_event"
       assert event.data == %{data: "test"}
       assert event.metadata == %{source: "test"}
       assert %DateTime{} = event.timestamp
@@ -33,17 +33,17 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
 
   describe "subscribe/1" do
     test "subscribes to specific event types" do
-      assert :ok = EventBus.subscribe(:test_event)
+      assert :ok = EventBus.subscribe("test_event")
 
       # Emit an event
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
 
       # Should receive the event
-      assert_receive {:event, %Event{type: :test_event}}
+      assert_receive {:event, %Event{type: "test_event"}}
 
       # Should not receive other events
-      {:ok, _event_id} = EventBus.emit(:other_event, %{data: "test"})
-      refute_receive {:event, %Event{type: :other_event}}
+      {:ok, _event_id} = EventBus.emit("other_event", %{data: "test"})
+      refute_receive {:event, %Event{type: "other_event"}}
     end
 
     test "multiple subscribers receive the same event" do
@@ -52,7 +52,7 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
 
       subscriber1 =
         spawn(fn ->
-          EventBus.subscribe(:test_event)
+          EventBus.subscribe("test_event")
           send(parent, {:ready, :subscriber1})
 
           receive do
@@ -62,7 +62,7 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
 
       subscriber2 =
         spawn(fn ->
-          EventBus.subscribe(:test_event)
+          EventBus.subscribe("test_event")
           send(parent, {:ready, :subscriber2})
 
           receive do
@@ -75,11 +75,11 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
       assert_receive {:ready, :subscriber2}
 
       # Emit event
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
 
       # Both should receive
-      assert_receive {:subscriber1, %Event{type: :test_event}}
-      assert_receive {:subscriber2, %Event{type: :test_event}}
+      assert_receive {:subscriber1, %Event{type: "test_event"}}
+      assert_receive {:subscriber2, %Event{type: "test_event"}}
 
       # Clean up
       Process.exit(subscriber1, :normal)
@@ -92,43 +92,43 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
       assert :ok = EventBus.subscribe_pattern("test.*")
 
       # Should receive matching events
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
-      assert_receive {:event, %Event{type: :test_event}}
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
+      assert_receive {:event, %Event{type: "test_event"}}
 
-      {:ok, _event_id} = EventBus.emit(:test_action, %{data: "test"})
-      assert_receive {:event, %Event{type: :test_action}}
+      {:ok, _event_id} = EventBus.emit("test_action", %{data: "test"})
+      assert_receive {:event, %Event{type: "test_action"}}
 
       # Should not receive non-matching events
-      {:ok, _event_id} = EventBus.emit(:other_event, %{data: "test"})
-      refute_receive {:event, %Event{type: :other_event}}, 100
+      {:ok, _event_id} = EventBus.emit("other_event", %{data: "test"})
+      refute_receive {:event, %Event{type: "other_event"}}, 100
     end
 
     test "supports wildcard patterns" do
       assert :ok = EventBus.subscribe_pattern("*")
 
       # Should receive all events
-      {:ok, _event_id} = EventBus.emit(:any_event, %{data: "test"})
-      assert_receive {:event, %Event{type: :any_event}}
+      {:ok, _event_id} = EventBus.emit("any_event", %{data: "test"})
+      assert_receive {:event, %Event{type: "any_event"}}
 
-      {:ok, _event_id} = EventBus.emit(:another_event, %{data: "test"})
-      assert_receive {:event, %Event{type: :another_event}}
+      {:ok, _event_id} = EventBus.emit("another_event", %{data: "test"})
+      assert_receive {:event, %Event{type: "another_event"}}
     end
   end
 
   describe "unsubscribe/1" do
     test "unsubscribes from specific event types" do
-      assert :ok = EventBus.subscribe(:test_event)
+      assert :ok = EventBus.subscribe("test_event")
 
       # Should receive event
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
-      assert_receive {:event, %Event{type: :test_event}}
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
+      assert_receive {:event, %Event{type: "test_event"}}
 
       # Unsubscribe
-      assert :ok = EventBus.unsubscribe(:test_event)
+      assert :ok = EventBus.unsubscribe("test_event")
 
       # Should not receive event after unsubscribe
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
-      refute_receive {:event, %Event{type: :test_event}}, 100
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
+      refute_receive {:event, %Event{type: "test_event"}}, 100
     end
   end
 
@@ -139,26 +139,26 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
       _initial_count = length(initial_history)
 
       # Emit some events
-      {:ok, _event_id1} = EventBus.emit(:event1, %{data: "test1"})
-      {:ok, _event_id2} = EventBus.emit(:event2, %{data: "test2"})
+      {:ok, _event_id1} = EventBus.emit("event1", %{data: "test1"})
+      {:ok, _event_id2} = EventBus.emit("event2", %{data: "test2"})
 
       # Should have history (our events should be in it)
       history = EventBus.get_history()
 
       # Check that our events are in the history
       event_types = Enum.map(history, & &1.type)
-      assert :event1 in event_types
-      assert :event2 in event_types
+      assert "event1" in event_types
+      assert "event2" in event_types
 
       # Should be in order (get the last two events that match ours)
-      our_events = Enum.filter(history, fn event -> event.type in [:event1, :event2] end)
+      our_events = Enum.filter(history, fn event -> event.type in ["event1", "event2"] end)
       assert length(our_events) >= 2
     end
 
     test "limits history size" do
       # Emit many events
       Enum.each(1..5, fn i ->
-        {:ok, _event_id} = EventBus.emit(:"event#{i}", %{data: "test#{i}"})
+        {:ok, _event_id} = EventBus.emit("event#{i}", %{data: "test#{i}"})
       end)
 
       # Get limited history
@@ -166,9 +166,9 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
       assert length(history) == 3
 
       # Should be the last 3 events
-      assert Enum.at(history, 0).type == :event3
-      assert Enum.at(history, 1).type == :event4
-      assert Enum.at(history, 2).type == :event5
+      assert Enum.at(history, 0).type == "event3"
+      assert Enum.at(history, 1).type == "event4"
+      assert Enum.at(history, 2).type == "event5"
     end
   end
 
@@ -179,7 +179,7 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
 
       subscriber =
         spawn(fn ->
-          EventBus.subscribe(:test_event)
+          EventBus.subscribe("test_event")
           send(parent, :subscribed)
 
           receive do
@@ -195,7 +195,7 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
       EventBus.get_history(1)
 
       # Emit event - should not crash even though subscriber is dead
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
 
       # Event bus should still be alive
       event_bus_pid = Process.whereis(EventBus)
@@ -209,10 +209,10 @@ defmodule Mabeam.Foundation.Communication.EventBusTest do
       Phoenix.PubSub.subscribe(Mabeam.PubSub, "events:test_event")
 
       # Emit event
-      {:ok, _event_id} = EventBus.emit(:test_event, %{data: "test"})
+      {:ok, _event_id} = EventBus.emit("test_event", %{data: "test"})
 
       # Should receive via Phoenix.PubSub
-      assert_receive {:event, %Event{type: :test_event}}
+      assert_receive {:event, %Event{type: "test_event"}}
     end
   end
 end
