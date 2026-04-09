@@ -25,3 +25,7 @@ end
 ```
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc) and published on [HexDocs](https://hexdocs.pm). Once published, the docs can be found at [https://hexdocs.pm/mabeam](https://hexdocs.pm/mabeam).
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

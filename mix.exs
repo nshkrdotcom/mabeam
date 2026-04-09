@@ -1,13 +1,16 @@
 defmodule Mabeam.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/nshkrdotcom/mabeam"
+
   def project do
     [
       app: :mabeam,
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: package()
     ]
   end
 
@@ -35,6 +38,13 @@ defmodule Mabeam.MixProject do
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 0.5", only: :test}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url}
     ]
   end
 end
